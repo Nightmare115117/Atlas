@@ -301,8 +301,6 @@ erDiagram
         timestamp updated_at
     }
 ```
-![alt text](assets/image.png)
-
 **Nota:** el diagrama representa la estructura conceptual propuesta. Los tipos definitivos, las restricciones compuestas y las cardinalidades deben validarse al elaborar el esquema SQL.
 
 ## 5. Relaciones y cardinalidades
