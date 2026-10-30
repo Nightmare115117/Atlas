@@ -1,15 +1,15 @@
 mod config;
+mod common;
 mod health;
+mod user;
 
+use axum::Router;
 use config::{from_env, create_pool};
 use tokio::runtime;
 use tokio::net::TcpListener;
 use std::process::exit;
-use hyper::service::service_fn;
-use hyper::body::Incoming;
-use hyper_util::{rt::{TokioExecutor, TokioIo}, server::conn::auto::Builder};
-use hyper::Request;
-use tower::ServiceExt;
+use common::{repo, service, routes};
+use user::user_model;
 
 use crate::health::health_route;
 
@@ -51,38 +51,43 @@ fn main() {
             }
         };
         
-        let route = health_route();
+        let route = Router::new().merge(health_route());
 
-        loop {
-            let (stream, addr) = match listen.accept().await {
-                Ok(res) => {res}
-                Err(error) => {
-                    eprintln!("Error al obtener los valores, error: {error}");
-                    exit(1);
-                }
-            };
+        //loop {
+        //    let (stream, addr) = match listen.accept().await {
+        //        Ok(res) => {res}
+        //        Err(error) => {
+        //            eprintln!("Error al obtener los valores, error: {error}");
+        //            exit(1);
+        //        }
+        //    };
 
-            let io = TokioIo::new(stream);
+        //    let io = TokioIo::new(stream);
             
-            let clone = route.clone();
-            let service = service_fn(move |request: Request<Incoming>| {
-                let route_clone = clone.clone();
+        //    let clone = route.clone();
+        //    let service = service_fn(move |request: Request<Incoming>| {
+        //        let route_clone = clone.clone();
 
-                async move {
-                    let request = request.map(axum::body::Body::new);
-                    route_clone.oneshot(request).await
-                }
-            });
+        //        async move {
+        //            let request = request.map(axum::body::Body::new);
+        //            route_clone.oneshot(request).await
+        //        }
+        //    });
+    
+        //    tokio::spawn(async move {
+        //        let builder = Builder::new(TokioExecutor::new())
+        //        .http2_only();
+        //        if let Err(error) = builder.serve_connection(io, service).await {
+        //            eprintln!("Error en la conexión con {addr}: {error}");
+        //        }
+        //    });
+        //}
 
-            
-            
-            tokio::spawn(async move {
-                let builder = Builder::new(TokioExecutor::new())
-                .http2_only();
-                if let Err(error) = builder.serve_connection(io, service).await {
-                    eprintln!("Error en la conexión con {addr}: {error}");
-                }
-            });
-        }
+        match axum::serve(listen,route).await {
+            Ok(_) => {}
+            Err(error) => {
+                eprintln!("Error durante el funcionamiento del servidor error: {error}");
+            }
+        };
     })
 }
