@@ -7,7 +7,9 @@ edition = "2024"
 aes-gcm = "0.11.1"
 axum = { version = "0.8.9", features = ["http2"] }
 bcrypt = "0.19.3"
+crypto-common = "0.2.2"
 dotenvy = "0.15.7"
+hex = "0.4.3"
 hmac = "0.13.0"
 hyper = { version = "1.12.0", features = ["http2"] }
 hyper-util = { version = "0.1.21", features = ["server", "http2", "tokio", "service"] }

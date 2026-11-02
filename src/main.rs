@@ -1,5 +1,6 @@
 mod config;
 mod common;
+mod security;
 mod health;
 mod user;
 
@@ -7,13 +8,17 @@ use axum::Router;
 use config::{from_env, create_pool};
 use tokio::runtime;
 use tokio::net::TcpListener;
-use std::process::exit;
+use std::{process::exit, sync::Arc};
 use common::{repo, service, routes};
+use security::bcrypt;
 use user::user_model;
 
-use crate::health::health_route;
+use crate::{common::repo::Repo, health::health_route, security::{aes::AES_KEY, hmac::HMAC_KEY}, user::repo::user_repo::UserRepo};
 
 fn main() {
+
+    let _ = &*HMAC_KEY;
+    let _ = &*AES_KEY;
 
     let conf = match from_env() {
         Ok(res) => {res}
@@ -31,7 +36,7 @@ fn main() {
         }
     };
     
-    let pool = match runtime.block_on(create_pool(&conf)) {
+    let repo = Arc::new(Repo::new(match runtime.block_on(create_pool(&conf)) {
         Ok(res) => {
             println!("El pool se a creado correctamente");
             res
@@ -40,7 +45,9 @@ fn main() {
             eprintln!("Error al crear la pool de la base de datos, error: {error}");
             exit(1);
         }
-    };
+    }));
+
+    let repo_user = UserRepo::new(repo);
 
     runtime.block_on(async {
         let listen = match TcpListener::bind("127.0.0.1:8080").await {
