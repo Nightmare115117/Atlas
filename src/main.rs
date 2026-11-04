@@ -10,7 +10,6 @@ use tokio::runtime;
 use tokio::net::TcpListener;
 use std::{process::exit, sync::Arc};
 use common::{repo, service, routes};
-use security::bcrypt;
 use user::user_model;
 
 use crate::{common::repo::Repo, health::health_route, security::{aes::AES_KEY, hmac::HMAC_KEY}, user::repo::user_repo::UserRepo};

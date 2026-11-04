@@ -1,3 +1,3 @@
 pub mod aes;
 pub mod hmac;
-pub mod bcrypt;
+pub mod argon2id;
