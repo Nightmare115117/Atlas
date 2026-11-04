@@ -1,5 +1,5 @@
-use crate::repo::{Repository, Repo};
-use crate::user_model::{UserModel};
+use crate::user::{model::user_model::UserModel};
+use crate::common::repo::{Repository, Repo};
 
 use sqlx::{Postgres, QueryBuilder, query, query_as, Row};
 use tracing::instrument;

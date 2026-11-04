@@ -4,6 +4,12 @@ pub struct Service <R> {
     repo: R,
 }
 
+impl<R> Service<R> {
+    pub fn new(repo: R) -> Service<R> {
+        Service{repo: repo}
+    }
+}
+
 pub trait ServiceG {
     type Entity;
     type CreateData;
