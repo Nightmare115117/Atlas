@@ -5,57 +5,50 @@ mod health;
 mod user;
 
 use axum::Router;
+use tracing::instrument;
 use config::{from_env, create_pool};
 use tokio::runtime;
 use tokio::net::TcpListener;
-use std::{process::exit, sync::Arc};
+use std::{sync::Arc};
 use common::{repo, service, routes};
 use user::user_model;
 
 use crate::{common::repo::Repo, health::health_route, security::{aes::AES_KEY, hmac::HMAC_KEY}, user::repo::user_repo::UserRepo};
 
-fn main() {
+#[derive(Debug,thiserror::Error)]
+pub enum AppErr {
+
+    #[error(transparent)]
+    IoError(#[from] std::io::Error),
+
+    #[error(transparent)]
+    ConfigErr(#[from] config::config::ConfigError),
+
+    #[error(transparent)]
+    DatabaseError(#[from] sqlx::Error),
+
+    
+}
+
+fn main() -> Result<(),AppErr>{
+    tracing_subscriber::fmt::init();
 
     let _ = &*HMAC_KEY;
     let _ = &*AES_KEY;
 
-    let conf = match from_env() {
-        Ok(res) => {res}
-        Err(error) => {
-            eprintln!("Error al configurar, error: {error}");
-            exit(1);
-        }
-    };
+    let conf = from_env()?;
 
-    let runtime = match runtime::Builder::new_multi_thread().enable_all().build() {
-        Ok(res) => {res}
-        Err(error) => {
-            eprintln!("Error al instanciar el runtime, error {error}");
-            exit(1);
-        }
-    };
+    let runtime = runtime::Builder::new_multi_thread().enable_all().build()?;
     
-    let repo = Arc::new(Repo::new(match runtime.block_on(create_pool(&conf)) {
-        Ok(res) => {
-            println!("El pool se a creado correctamente");
-            res
-        }
-        Err(error) => {
-            eprintln!("Error al crear la pool de la base de datos, error: {error}");
-            exit(1);
-        }
-    }));
+    let repo = Arc::new(
+        Repo::new( 
+            runtime.block_on(
+                create_pool(&conf))?));
 
     let repo_user = UserRepo::new(repo);
 
     runtime.block_on(async {
-        let listen = match TcpListener::bind("127.0.0.1:8080").await {
-            Ok(res) => {res}
-            Err(error) => {
-                eprintln!("Error al crear el Listener, error: {error}");
-                exit(1)
-            }
-        };
+        let listen = TcpListener::bind("0.0.0.0:8080").await?;
         
         let route = Router::new().merge(health_route());
 
@@ -89,11 +82,9 @@ fn main() {
         //    });
         //}
 
-        match axum::serve(listen,route).await {
-            Ok(_) => {}
-            Err(error) => {
-                eprintln!("Error durante el funcionamiento del servidor error: {error}");
-            }
-        };
-    })
+        axum::serve(listen,route).await?;
+        Ok::<(), std::io::Error>(())
+    })?;
+
+    Ok(())
 }

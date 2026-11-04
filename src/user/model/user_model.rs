@@ -3,7 +3,7 @@ use sqlx::prelude::FromRow;
 use time::OffsetDateTime;
 use uuid::Uuid;
 
-#[derive(FromRow)]
+#[derive(FromRow, Debug)]
 pub struct UserModel {
     id: Uuid,
     pub email: String,

@@ -1,4 +1,5 @@
 use argon2::{Algorithm, Argon2, Params, PasswordHash, PasswordHasher, PasswordVerifier, Version, password_hash};
+use tracing::instrument;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Argon2IdError {
@@ -12,6 +13,7 @@ pub enum Argon2IdError {
     ParseError(#[from] password_hash::phc::Error),
 }
 
+#[instrument(err)]
 fn config_hash() -> Result<Argon2<'static>, Argon2IdError>{
     let param = Params::new(19456, 2, 1, Some(32))?;
     let algorithm = Algorithm::Argon2id;
@@ -20,6 +22,7 @@ fn config_hash() -> Result<Argon2<'static>, Argon2IdError>{
     Ok(Argon2::new(algorithm, version, param))    
 }
 
+#[instrument(err)]
 pub fn hash_password(pass: &str) -> Result<String, Argon2IdError> {
     let hash = config_hash()?;
 
@@ -27,6 +30,7 @@ pub fn hash_password(pass: &str) -> Result<String, Argon2IdError> {
     Ok(pass_hash.to_string())
 }
 
+#[instrument(err)]
 pub fn verify_password(pass: &str, hash_pass: &str) -> Result<bool, Argon2IdError> {
     let hash = config_hash()?;
     let password_hash = PasswordHash::new(&hash_pass)?;
