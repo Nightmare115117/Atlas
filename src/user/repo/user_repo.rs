@@ -2,8 +2,10 @@ use crate::repo::{Repository, Repo};
 use crate::user_model::{UserModel};
 
 use sqlx::{Postgres, QueryBuilder, query, query_as, Row};
+use tracing::instrument;
 use std::sync::Arc;
 
+#[derive(Debug)]
 pub struct UserRepo {
     repo: Arc<Repo>,
 }
@@ -13,6 +15,7 @@ impl UserRepo {
         UserRepo { repo: repo }
     } 
 
+    #[instrument(err)]
     pub async fn get_by_email(&self, correo: &str) -> Result<(String, String), UserRepoError> {
         let consulta = "SELECT email_ciphertext, password_hash FROM users WHERE email_hmac = $1";
 
@@ -46,6 +49,7 @@ pub enum UserRepoError {
 impl Repository<UserModel> for UserRepo {
     type Error = UserRepoError;
 
+    #[instrument(err)]
     async fn get_all(&self) -> Result<Vec<UserModel>, Self::Error> {
        let consulta = "SELECT id, email_ciphertext, status, created_at, updated_at FROM users";
        query_as::<_,UserModel>(consulta)
@@ -54,6 +58,7 @@ impl Repository<UserModel> for UserRepo {
        .map_err(UserRepoError::Database)
     }
 
+    #[instrument(err)]
     async fn get_by_id(&self, id: uuid::Uuid) -> Result<UserModel, Self::Error> {
         let consulta = "SELECT id, email_ciphertext, status, created_at, updated_at FROM users WHERE id = $1";
         let result = query_as::<_, UserModel>(consulta)
@@ -67,6 +72,7 @@ impl Repository<UserModel> for UserRepo {
         }
     }
 
+    #[instrument(err)]
     async fn create(&self, data: UserModel) -> Result<(), Self::Error> {
         let command = "INSERT INTO users (email_ciphertext, email_hmac, password_hash, status) VALUES ($1, $2, $3, $4)";
         query(command)
@@ -80,6 +86,7 @@ impl Repository<UserModel> for UserRepo {
         .map_err(UserRepoError::Database)
     }
 
+    #[instrument(err)]
     async  fn update(&self, id: uuid::Uuid, data: UserModel) -> Result<(), Self::Error> {
         let mut it: u8 = 0;
         let mut query = QueryBuilder::<Postgres>::new("UPDATE users SET ");
@@ -128,6 +135,7 @@ impl Repository<UserModel> for UserRepo {
         }
     }
 
+    #[instrument(err)]
     async  fn delete(&self, id: uuid::Uuid) -> Result<(),Self::Error> {
         let command = "UPDATE users SET status = 'Inactive' WHERE id = $1";
 

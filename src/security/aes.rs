@@ -3,21 +3,22 @@ use aes_gcm::{aead::{Aead, KeyInit}, Aes256Gcm, Nonce};
 use crypto_common::InvalidLength;
 use hex::FromHexError;
 use rand::TryRng;
+use tracing::instrument;
 
+pub static AES_KEY: LazyLock<Vec<u8>> =
+    LazyLock::new(initialize_aes_key);
 
-pub static AES_KEY: LazyLock<Vec<u8>> = LazyLock::new(|| {
+#[instrument]
+fn initialize_aes_key() -> Vec<u8> {
     dotenvy::dotenv().ok();
 
     let key = std::env::var("AES_KEY")
         .expect("AES_KEY no está configurada");
 
-    assert_eq!(
-    key.len(),
-    64,
-    "AES_KEY debe contener exactamente 64 caracteres hexadecimales");
+    assert_eq!(key.len(), 64, "AES_KEY debe contener 64 caracteres");
 
     hex::decode(key).expect("AES_KEY no es hexadecimal válido")
-});
+}
 
 #[derive(Debug, thiserror::Error)]
 pub enum EncryptionError{
@@ -43,6 +44,7 @@ pub enum EncryptionError{
     FromHexError(#[from]FromHexError),
 }
 
+#[instrument(err)]
 pub fn encrypt_email(email: &str) -> Result<String, EncryptionError> {
 
     let mut nonce_bytes = [0u8; 12];
@@ -62,6 +64,7 @@ pub fn encrypt_email(email: &str) -> Result<String, EncryptionError> {
     Ok(hex::encode(cyphertext))
 }
 
+#[instrument(err)]
 pub fn decrypt_email(ciphertext: &str) -> Result<String, EncryptionError> {
     let cyphertext = hex::decode(ciphertext)?;
     let crypto = Aes256Gcm::new_from_slice(&AES_KEY)?;
@@ -76,5 +79,4 @@ pub fn decrypt_email(ciphertext: &str) -> Result<String, EncryptionError> {
     let reslt = crypto.decrypt(&nonce, encrypted_data)?;
 
     Ok(String::from_utf8(reslt)?)
-
 }

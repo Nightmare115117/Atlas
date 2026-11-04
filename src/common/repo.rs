@@ -1,6 +1,7 @@
 use sqlx::{Pool, Postgres};
 use uuid::Uuid;
 
+#[derive(Debug)]
 pub struct Repo {
     pool: Pool<Postgres>,
 }
