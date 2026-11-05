@@ -8,6 +8,10 @@ impl<R> Service<R> {
     pub fn new(repo: R) -> Service<R> {
         Service{repo: repo}
     }
+
+    pub fn repo(&self) -> &R {
+        &self.repo
+    }
 }
 
 pub trait ServiceG {

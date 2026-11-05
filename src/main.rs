@@ -9,8 +9,8 @@ use config::{from_env, create_pool};
 use tokio::runtime;
 use tokio::net::TcpListener;
 use std::{sync::Arc};
-use crate::common::{repo::Repo, service::Service, routes};
-use user::{user_repo::UserRepo, user_service::UserService};
+use crate::common::{Repo, Service};
+use crate::user::{UserRepo, UserService};
 
 use crate::{health::health_route, security::{aes::AES_KEY, hmac::HMAC_KEY}};
 

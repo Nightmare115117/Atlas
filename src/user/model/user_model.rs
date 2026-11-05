@@ -7,6 +7,8 @@ use uuid::Uuid;
 pub struct UserModel {
     id: Uuid,
     pub email: String,
+    first_name: String,
+    last_name: String,
     email_ciphertext: String,
     email_hmac: String,
     password_hash: String,
@@ -18,7 +20,23 @@ pub struct UserModel {
 impl UserModel {
 
     pub fn new() -> UserModel {
-        UserModel { id: Uuid::new_v4(), email: String::new(),email_ciphertext: String::new(), email_hmac: String::new(), password_hash: String::new(), status: String::new(), created_at: OffsetDateTime::now_utc(), updated_at: OffsetDateTime::now_utc() }
+        UserModel { id: Uuid::new_v4(), email: String::new(), first_name: String::new(), last_name: String::new(), email_ciphertext: String::new(), email_hmac: String::new(), password_hash: String::new(), status: String::new(), created_at: OffsetDateTime::now_utc(), updated_at: OffsetDateTime::now_utc() }
+    }
+
+    pub fn get_first_name(&self) -> &str {
+        &self.first_name
+    }
+
+    pub fn set_first_name(&mut self, value: &str) {
+        self.first_name = value.to_owned();
+    }
+
+    pub fn get_last_name(&self) -> &str {
+        &self.last_name
+    }
+
+    pub fn set_last_name(&mut self, value: &str) {
+        self.last_name = value.to_owned();
     }
 
     pub fn get_email_ciphertext(&self) -> &str {
@@ -72,16 +90,24 @@ impl UserModel {
 
 #[derive(Serialize, Deserialize)]
 pub struct UserDTO {
-    pub id: Uuid,
     pub email: String,
-    pub status: String
+    pub first_name: String,
+    pub last_name: String,
 }
 
+#[derive(Debug, thiserror::Error)]
 pub enum ErrorConvertir {
-        EmailInvalido,
-        DatosIncompletos,
-        UsuarioVacio,
-        ErrorInterno(String),
+    #[error("Correo electrónico inválido")]
+    EmailInvalido,
+
+    #[error("Datos incompletos")]
+    DatosIncompletos,
+
+    #[error("El usuario está vacío")]
+    UsuarioVacio,
+
+    #[error("Error interno: {0}")]
+    ErrorInterno(String),
 }
 
 impl TryFrom<Option<UserDTO>> for UserModel {
@@ -96,19 +122,24 @@ impl TryFrom<Option<UserDTO>> for UserModel {
         if usuario.email.trim().is_empty() {
             Err(Self::Error::EmailInvalido)
         } else {
-            Ok(UserModel { id: usuario.id, email: usuario.email, email_ciphertext: String::new(), email_hmac: String::new(), password_hash: String::new(), status: usuario.status, created_at: OffsetDateTime::now_utc(), updated_at: OffsetDateTime::now_utc() })
+            Ok(UserModel { id: Uuid::new_v4(), email: usuario.email, first_name: usuario.first_name, last_name: usuario.last_name, email_ciphertext: String::new(), email_hmac: String::new(), password_hash: String::new(), status: String::new(), created_at: OffsetDateTime::now_utc(), updated_at: OffsetDateTime::now_utc() })
         }
     }
 } 
 
 impl From<UserModel> for UserDTO {
     fn from(usuario: UserModel) -> Self {
-        let status = usuario.get_status().to_string();
-
         UserDTO {
             email: usuario.email,
-            id: usuario.id,
-            status,
+            first_name: usuario.first_name,
+            last_name: usuario.last_name,
         }
     }
+}
+
+pub struct UserDTOCreate {
+    pub email: String, 
+    pub password: String,
+    pub fist_name: String,
+    pub last_name: String,
 }

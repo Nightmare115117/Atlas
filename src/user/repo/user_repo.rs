@@ -1,5 +1,5 @@
-use crate::user::{model::user_model::UserModel};
-use crate::common::repo::{Repository, Repo};
+use crate::user::{UserModel};
+use crate::common::{Repository, Repo};
 
 use sqlx::{Postgres, QueryBuilder, query, query_as, Row};
 use tracing::instrument;
@@ -51,7 +51,7 @@ impl Repository<UserModel> for UserRepo {
 
     #[instrument(err)]
     async fn get_all(&self) -> Result<Vec<UserModel>, Self::Error> {
-       let consulta = "SELECT id, email_ciphertext, status, created_at, updated_at FROM users";
+       let consulta = "SELECT id, email, first_name, last_name, email_ciphertext, email_hmac, password_hash, status, created_at, updated_at FROM users";
        query_as::<_,UserModel>(consulta)
        .fetch_all(self.repo.get_pool())
        .await
@@ -60,7 +60,7 @@ impl Repository<UserModel> for UserRepo {
 
     #[instrument(err)]
     async fn get_by_id(&self, id: uuid::Uuid) -> Result<UserModel, Self::Error> {
-        let consulta = "SELECT id, email_ciphertext, status, created_at, updated_at FROM users WHERE id = $1";
+        let consulta = "SELECT id, email, first_name, last_name, email_ciphertext, email_hmac, password_hash, status, created_at, updated_at FROM users WHERE id = $1";
         let result = query_as::<_, UserModel>(consulta)
         .bind(id)
         .fetch_optional(self.repo.get_pool())
@@ -74,8 +74,10 @@ impl Repository<UserModel> for UserRepo {
 
     #[instrument(err)]
     async fn create(&self, data: UserModel) -> Result<(), Self::Error> {
-        let command = "INSERT INTO users (email_ciphertext, email_hmac, password_hash, status) VALUES ($1, $2, $3, $4)";
+        let command = "INSERT INTO users (first_name, last_name, email_ciphertext, email_hmac, password_hash, status) VALUES ($1, $2, $3, $4, $5, $6)";
         query(command)
+        .bind(data.get_first_name())
+        .bind(data.get_last_name())
         .bind(data.get_email_ciphertext())
         .bind(data.get_email_hmac())
         .bind(data.get_password_hash())
@@ -101,6 +103,20 @@ impl Repository<UserModel> for UserRepo {
                     .push_bind_unseparated(data.get_email_hmac());
 
                 it += 2;
+            }
+
+            if !data.get_first_name().trim().is_empty() {
+                separated.push("first_name = ")
+                    .push_bind_unseparated(data.get_first_name());
+
+                it += 1;
+            }
+
+            if !data.get_last_name().trim().is_empty() {
+                separated.push("last_name = ")
+                    .push_bind_unseparated(data.get_last_name());
+
+                it += 1;
             }
 
             if !data.get_password_hash().trim().is_empty() {
