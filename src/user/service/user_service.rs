@@ -1,9 +1,10 @@
-use crate::security::{Argon2IdError, EncryptionError, HMACError};
+use crate::security::{Argon2IdError, EncryptionError, HMACError, encrypt_email, sign_email, hash_password, verify_password};
 use crate::security::{decrypt_email};
-use crate::user::{UserRepo, UserRepoError, UserDTO, ErrorConvertir, UserDTOCreate};
+use crate::user::{ErrorConvertir, UserDTO, UserDTOCreate, UserModel, UserRepo, UserRepoError};
 use crate::common::{Repository, Service, ServiceG};
 use uuid::Uuid;
 
+#[derive(Debug)]
 pub struct UserService {
     service: Service<UserRepo>
 }
@@ -61,14 +62,47 @@ impl ServiceG for UserService {
     }
 
     async fn create(&self, data: Self::CreateData) -> Result<(), Self::Error> {
+        let mut user = UserModel::new();
+        user.set_email_ciphertext(&encrypt_email(&data.email)?);
+        user.set_email_hmac(&sign_email(&data.email)?);
+        user.set_password_hash(&hash_password(&data.password)?);
+        user.set_first_name(&data.first_name);
+        user.set_last_name(&data.last_name);
 
+        self.service.repo().create(user).await?;
+        Ok(())
     }
 
     async fn update(&self, id: Uuid, data: Self::UpdateData) -> Result<(), Self::Error> {
+        let mut user = UserModel::new();
+        
+        if !data.email.trim().is_empty() {
+            user.set_email_ciphertext(&encrypt_email(&data.email)?);
+            user.set_email_hmac(&sign_email(&data.email)?);
+        }
 
+        if !data.password.trim().is_empty() {
+            user.set_password_hash(&hash_password(&data.password)?);
+        }
+
+        if !data.first_name.trim().is_empty() {
+            user.set_first_name(&data.first_name);
+        }
+
+        if !data.last_name.trim().is_empty() {
+            user.set_last_name(&data.last_name);
+        }
+
+        if !data.status.trim().is_empty() {
+            user.set_status(&data.status);
+        }
+
+        self.service.repo().update(id, user).await?;
+        Ok(())
     }
 
     async fn delete(&self, id: Uuid) -> Result<(), Self::Error> {
-
+        self.service.repo().delete(id).await?;
+        Ok(())
     }
 }

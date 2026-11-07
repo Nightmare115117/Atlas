@@ -18,9 +18,19 @@ pub struct UserModel {
 }
 
 impl UserModel {
-
     pub fn new() -> UserModel {
-        UserModel { id: Uuid::new_v4(), email: String::new(), first_name: String::new(), last_name: String::new(), email_ciphertext: String::new(), email_hmac: String::new(), password_hash: String::new(), status: String::new(), created_at: OffsetDateTime::now_utc(), updated_at: OffsetDateTime::now_utc() }
+        UserModel {
+            id: Uuid::new_v4(),
+            email: String::new(),
+            first_name: String::new(),
+            last_name: String::new(),
+            email_ciphertext: String::new(),
+            email_hmac: String::new(),
+            password_hash: String::new(),
+            status: String::new(),
+            created_at: OffsetDateTime::now_utc(),
+            updated_at: OffsetDateTime::now_utc(),
+        }
     }
 
     pub fn get_first_name(&self) -> &str {
@@ -111,7 +121,7 @@ pub enum ErrorConvertir {
 }
 
 impl TryFrom<Option<UserDTO>> for UserModel {
-    type Error  = ErrorConvertir;
+    type Error = ErrorConvertir;
 
     fn try_from(user: Option<UserDTO>) -> Result<Self, Self::Error> {
         let usuario = match user {
@@ -122,10 +132,21 @@ impl TryFrom<Option<UserDTO>> for UserModel {
         if usuario.email.trim().is_empty() {
             Err(Self::Error::EmailInvalido)
         } else {
-            Ok(UserModel { id: Uuid::new_v4(), email: usuario.email, first_name: usuario.first_name, last_name: usuario.last_name, email_ciphertext: String::new(), email_hmac: String::new(), password_hash: String::new(), status: String::new(), created_at: OffsetDateTime::now_utc(), updated_at: OffsetDateTime::now_utc() })
+            Ok(UserModel {
+                id: Uuid::new_v4(),
+                email: usuario.email,
+                first_name: usuario.first_name,
+                last_name: usuario.last_name,
+                email_ciphertext: String::new(),
+                email_hmac: String::new(),
+                password_hash: String::new(),
+                status: String::new(),
+                created_at: OffsetDateTime::now_utc(),
+                updated_at: OffsetDateTime::now_utc(),
+            })
         }
     }
-} 
+}
 
 impl From<UserModel> for UserDTO {
     fn from(usuario: UserModel) -> Self {
@@ -137,9 +158,12 @@ impl From<UserModel> for UserDTO {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct UserDTOCreate {
-    pub email: String, 
+    pub email: String,
     pub password: String,
-    pub fist_name: String,
+    pub first_name: String,
     pub last_name: String,
+    pub status: String,
 }
+
