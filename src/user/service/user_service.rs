@@ -1,23 +1,26 @@
-use crate::security::{Argon2IdError, EncryptionError, HMACError, encrypt_email, sign_email, hash_password, verify_password};
-use crate::security::{decrypt_email};
-use crate::user::{ErrorConvertir, UserDTO, UserDTOCreate, UserModel, UserRepo, UserRepoError};
 use crate::common::{Repository, Service, ServiceG};
+use crate::security::decrypt_email;
+use crate::security::{
+    Argon2IdError, EncryptionError, HMACError, encrypt_email, hash_password, sign_email,
+    verify_password,
+};
+use crate::user::{ErrorConvertir, UserDTO, UserDTOCreate, UserModel, UserRepo, UserRepoError};
+use argon2::password_hash;
 use uuid::Uuid;
 
 #[derive(Debug)]
 pub struct UserService {
-    service: Service<UserRepo>
+    pub service: Service<UserRepo>,
 }
 
 impl UserService {
     pub fn new(service: Service<UserRepo>) -> UserService {
-        UserService { service: service}
-    } 
+        UserService { service: service }
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
 pub enum UserServiceError {
-    
     #[error(transparent)]
     Repository(#[from] UserRepoError),
 
@@ -50,7 +53,11 @@ impl ServiceG for UserService {
         let result = self.service.repo().get_all().await?;
         let mut vector: Vec<UserDTO> = Vec::new();
         for user in result.iter() {
-            let dto = UserDTO::from(UserDTO { email: decrypt_email(user.get_email_ciphertext())?, first_name: user.get_first_name().to_string(), last_name: user.get_last_name().to_string() });
+            let dto = UserDTO::from(UserDTO {
+                email: decrypt_email(user.get_email_ciphertext())?,
+                first_name: user.get_first_name().to_string(),
+                last_name: user.get_last_name().to_string(),
+            });
             vector.push(dto);
         }
         Ok(vector)
@@ -58,7 +65,11 @@ impl ServiceG for UserService {
 
     async fn get_by_id(&self, id: Uuid) -> Result<Self::Entity, Self::Error> {
         let result = self.service.repo().get_by_id(id).await?;
-        Ok(UserDTO::from(UserDTO { email: decrypt_email(result.get_email_ciphertext())?, first_name: result.get_first_name().to_string(), last_name: result.get_last_name().to_string()}))
+        Ok(UserDTO::from(UserDTO {
+            email: decrypt_email(result.get_email_ciphertext())?,
+            first_name: result.get_first_name().to_string(),
+            last_name: result.get_last_name().to_string(),
+        }))
     }
 
     async fn create(&self, data: Self::CreateData) -> Result<(), Self::Error> {
@@ -75,7 +86,7 @@ impl ServiceG for UserService {
 
     async fn update(&self, id: Uuid, data: Self::UpdateData) -> Result<(), Self::Error> {
         let mut user = UserModel::new();
-        
+
         if !data.email.trim().is_empty() {
             user.set_email_ciphertext(&encrypt_email(&data.email)?);
             user.set_email_hmac(&sign_email(&data.email)?);
@@ -104,5 +115,11 @@ impl ServiceG for UserService {
     async fn delete(&self, id: Uuid) -> Result<(), Self::Error> {
         self.service.repo().delete(id).await?;
         Ok(())
+    }
+}
+
+impl UserService {
+    pub async fn login(&self, email: &str, password: &str) {
+        let (correo:, password_hash) = self.service.repo().get_by_email(correo).await?;
     }
 }

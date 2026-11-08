@@ -7,8 +7,8 @@ pub struct Repo {
 }
 
 impl Repo {
-    pub fn new(pool: Pool<Postgres>) -> Repo {
-        Repo {pool: pool}
+    pub fn new(pila: Pool<Postgres>) -> Repo {
+        Repo { pool: pila }
     }
 
     pub fn get_pool(&self) -> &Pool<Postgres> {
@@ -23,5 +23,6 @@ pub trait Repository<T> {
     async fn get_by_id(&self, id: Uuid) -> Result<T, Self::Error>;
     async fn create(&self, data: T) -> Result<(), Self::Error>;
     async fn update(&self, id: Uuid, data: T) -> Result<(), Self::Error>;
-    async fn delete(&self, id: Uuid) -> Result<(),Self::Error>;
+    async fn delete(&self, id: Uuid) -> Result<(), Self::Error>;
 }
+

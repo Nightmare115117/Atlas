@@ -22,7 +22,7 @@ pub enum AppErr {
     IoError(#[from] std::io::Error),
 
     #[error(transparent)]
-    ConfigErr(#[from] config::config::ConfigError),
+    ConfigErr(#[from] config::config_mod::ConfigError),
 
     #[error(transparent)]
     DatabaseError(#[from] sqlx::Error),
