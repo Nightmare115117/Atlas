@@ -1,4 +1,5 @@
 use crate::common::{ServiceG, UserState};
+use crate::user::model::user_model::LoginDTO;
 use crate::user::{UserDTO, UserDTOCreate, UserServiceError};
 use axum::{
     Json,
@@ -49,6 +50,18 @@ pub async fn delete(
     Path(id): Path<Uuid>,
 ) -> Result<StatusCode, UserServiceError> {
     state.service.delete(id).await?;
+
+    Ok(StatusCode::OK)
+}
+
+pub async fn login(
+    State(state): State<UserState>,
+    Json(payload): Json<LoginDTO>,
+) -> Result<StatusCode, UserServiceError> {
+    state
+        .service
+        .login(&payload.email, &payload.password)
+        .await?;
 
     Ok(StatusCode::OK)
 }

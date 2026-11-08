@@ -5,7 +5,7 @@ pub mod repo;
 pub mod routes;
 pub mod service;
 
-pub use handler::user_handler::{create, delete, get_all, get_by_id, update};
+pub use handler::user_handler::{create, delete, get_all, get_by_id, login, update};
 pub use model::user_model::{ErrorConvertir, UserDTO, UserDTOCreate, UserModel};
 pub use repo::user_repo::{UserRepo, UserRepoError};
 pub use routes::user_routes::UserRoutes;

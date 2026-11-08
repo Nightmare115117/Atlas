@@ -1,5 +1,5 @@
 use crate::common::{Route, UserState};
-use crate::user::{create, delete as delete_user, get_all, get_by_id, update};
+use crate::user::{create, delete as delete_user, get_all, get_by_id, login, update};
 use axum::{
     Router,
     routing::{delete, get, patch, post},
@@ -17,5 +17,6 @@ impl Route for UserRoutes {
             .route("/", post(create))
             .route("/{id}", patch(update))
             .route("/{id}", delete(delete_user))
+            .route("/login", post(login))
     }
 }

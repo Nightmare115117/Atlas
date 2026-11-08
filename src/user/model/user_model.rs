@@ -167,3 +167,8 @@ pub struct UserDTOCreate {
     pub status: String,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct LoginDTO {
+    pub email: String,
+    pub password: String,
+}
