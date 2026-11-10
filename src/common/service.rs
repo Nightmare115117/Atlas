@@ -1,12 +1,13 @@
 use uuid::Uuid;
 
-pub struct Service <R> {
+#[derive(Debug)]
+pub struct Service<R> {
     repo: R,
 }
 
 impl<R> Service<R> {
-    pub fn new(repo: R) -> Service<R> {
-        Service{repo: repo}
+    pub fn new(repository: R) -> Service<R> {
+        Service { repo: repository }
     }
 
     pub fn repo(&self) -> &R {
@@ -26,3 +27,4 @@ pub trait ServiceG {
     async fn update(&self, id: Uuid, data: Self::UpdateData) -> Result<(), Self::Error>;
     async fn delete(&self, id: Uuid) -> Result<(), Self::Error>;
 }
+

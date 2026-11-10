@@ -1,9 +1,9 @@
-use crate::user::{UserModel};
-use crate::common::{Repository, Repo};
+use crate::common::{Repo, Repository};
+use crate::user::UserModel;
 
-use sqlx::{Postgres, QueryBuilder, query, query_as, Row};
-use tracing::instrument;
+use sqlx::{Postgres, QueryBuilder, Row, query, query_as};
 use std::sync::Arc;
+use tracing::instrument;
 
 #[derive(Debug)]
 pub struct UserRepo {
@@ -11,22 +11,25 @@ pub struct UserRepo {
 }
 
 impl UserRepo {
-    pub fn new (repo :Arc<Repo>) -> UserRepo {
-        UserRepo { repo: repo }
-    } 
+    pub fn new(repository: Arc<Repo>) -> UserRepo {
+        UserRepo { repo: repository }
+    }
 
     #[instrument(err)]
     pub async fn get_by_email(&self, correo: &str) -> Result<(String, String), UserRepoError> {
         let consulta = "SELECT email_ciphertext, password_hash FROM users WHERE email_hmac = $1";
 
         let result = query(consulta)
-        .bind(correo)
-        .fetch_optional(self.repo.get_pool())
-        .await?;
+            .bind(correo)
+            .fetch_optional(self.repo.get_pool())
+            .await?;
 
         match result {
-            Some(row) => Ok((row.try_get("email_ciphertext")?, row.try_get("password_hash")?)),
-            None => Err(UserRepoError::UserNotFound)
+            Some(row) => Ok((
+                row.try_get("email_ciphertext")?,
+                row.try_get("password_hash")?,
+            )),
+            None => Err(UserRepoError::UserNotFound),
         }
     }
 }
@@ -51,24 +54,24 @@ impl Repository<UserModel> for UserRepo {
 
     #[instrument(err)]
     async fn get_all(&self) -> Result<Vec<UserModel>, Self::Error> {
-       let consulta = "SELECT id, email, first_name, last_name, email_ciphertext, email_hmac, password_hash, status, created_at, updated_at FROM users";
-       query_as::<_,UserModel>(consulta)
-       .fetch_all(self.repo.get_pool())
-       .await
-       .map_err(UserRepoError::Database)
+        let consulta = "SELECT id, first_name, last_name, email_ciphertext, email_hmac, password_hash, status, created_at, updated_at FROM users";
+        query_as::<_, UserModel>(consulta)
+            .fetch_all(self.repo.get_pool())
+            .await
+            .map_err(UserRepoError::Database)
     }
 
     #[instrument(err)]
     async fn get_by_id(&self, id: uuid::Uuid) -> Result<UserModel, Self::Error> {
-        let consulta = "SELECT id, email, first_name, last_name, email_ciphertext, email_hmac, password_hash, status, created_at, updated_at FROM users WHERE id = $1";
+        let consulta = "SELECT id, first_name, last_name, email_ciphertext, email_hmac, password_hash, status, created_at, updated_at FROM users WHERE id = $1";
         let result = query_as::<_, UserModel>(consulta)
-        .bind(id)
-        .fetch_optional(self.repo.get_pool())
-        .await?;
+            .bind(id)
+            .fetch_optional(self.repo.get_pool())
+            .await?;
 
         match result {
             Some(data) => Ok(data),
-            None => Err(UserRepoError::UserNotFound)
+            None => Err(UserRepoError::UserNotFound),
         }
     }
 
@@ -76,58 +79,66 @@ impl Repository<UserModel> for UserRepo {
     async fn create(&self, data: UserModel) -> Result<(), Self::Error> {
         let command = "INSERT INTO users (first_name, last_name, email_ciphertext, email_hmac, password_hash, status) VALUES ($1, $2, $3, $4, $5, $6)";
         query(command)
-        .bind(data.get_first_name())
-        .bind(data.get_last_name())
-        .bind(data.get_email_ciphertext())
-        .bind(data.get_email_hmac())
-        .bind(data.get_password_hash())
-        .bind("Pending")
-        .execute(self.repo.get_pool())
-        .await
-        .map(|_| ())
-        .map_err(UserRepoError::Database)
+            .bind(data.get_first_name())
+            .bind(data.get_last_name())
+            .bind(data.get_email_ciphertext())
+            .bind(data.get_email_hmac())
+            .bind(data.get_password_hash())
+            .bind("Pending")
+            .execute(self.repo.get_pool())
+            .await
+            .map(|_| ())
+            .map_err(UserRepoError::Database)
     }
 
     #[instrument(err)]
-    async  fn update(&self, id: uuid::Uuid, data: UserModel) -> Result<(), Self::Error> {
+    async fn update(&self, id: uuid::Uuid, data: UserModel) -> Result<(), Self::Error> {
         let mut it: u8 = 0;
         let mut query = QueryBuilder::<Postgres>::new("UPDATE users SET ");
         {
             let mut separated = query.separated(", ");
 
-            if !data.email.trim().is_empty() {
-                separated.push("email_ciphertext = ")
+            if !data.get_email_ciphertext().trim().is_empty()
+                && !data.get_email_hmac().trim().is_empty()
+            {
+                separated
+                    .push("email_ciphertext = ")
                     .push_bind_unseparated(data.get_email_ciphertext());
 
-                separated.push("email_hmac = ")
+                separated
+                    .push("email_hmac = ")
                     .push_bind_unseparated(data.get_email_hmac());
 
                 it += 2;
             }
 
             if !data.get_first_name().trim().is_empty() {
-                separated.push("first_name = ")
+                separated
+                    .push("first_name = ")
                     .push_bind_unseparated(data.get_first_name());
 
                 it += 1;
             }
 
             if !data.get_last_name().trim().is_empty() {
-                separated.push("last_name = ")
+                separated
+                    .push("last_name = ")
                     .push_bind_unseparated(data.get_last_name());
 
                 it += 1;
             }
 
             if !data.get_password_hash().trim().is_empty() {
-                separated.push("password_hash = ")
+                separated
+                    .push("password_hash = ")
                     .push_bind_unseparated(data.get_password_hash());
 
                 it += 1;
             }
 
             if !data.get_status().trim().is_empty() {
-                separated.push("status = ")
+                separated
+                    .push("status = ")
                     .push_bind_unseparated(data.get_status());
 
                 it += 1;
@@ -136,13 +147,11 @@ impl Repository<UserModel> for UserRepo {
         query.push(" WHERE id = ");
         query.push_bind(id);
 
-        if it == 0 { 
+        if it == 0 {
             return Err(UserRepoError::NoFieldsToUpdate);
         }
 
-        let result = query.build()
-        .execute(self.repo.get_pool())
-        .await?;
+        let result = query.build().execute(self.repo.get_pool()).await?;
 
         if result.rows_affected() > 0 {
             Ok(())
@@ -152,13 +161,13 @@ impl Repository<UserModel> for UserRepo {
     }
 
     #[instrument(err)]
-    async  fn delete(&self, id: uuid::Uuid) -> Result<(),Self::Error> {
+    async fn delete(&self, id: uuid::Uuid) -> Result<(), Self::Error> {
         let command = "UPDATE users SET status = 'Inactive' WHERE id = $1";
 
         let result = query(command)
-        .bind(id)
-        .execute(self.repo.get_pool())
-        .await?;
+            .bind(id)
+            .execute(self.repo.get_pool())
+            .await?;
 
         if result.rows_affected() > 0 {
             Ok(())
