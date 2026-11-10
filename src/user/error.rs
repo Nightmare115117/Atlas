@@ -13,8 +13,6 @@ impl IntoResponse for UserServiceError {
             UserServiceError::EmailEncryption(_) => StatusCode::INTERNAL_SERVER_ERROR,
             UserServiceError::EmailHMAC(_) => StatusCode::INTERNAL_SERVER_ERROR,
             UserServiceError::UserParse(_) => StatusCode::INTERNAL_SERVER_ERROR,
-            UserServiceError::UserNotFound => StatusCode::NOT_FOUND,
-            UserServiceError::InvalidData => StatusCode::BAD_REQUEST,
         };
 
         status.into_response()

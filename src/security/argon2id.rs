@@ -7,13 +7,13 @@ use tracing::instrument;
 #[derive(Debug, thiserror::Error)]
 pub enum Argon2IdError {
     #[error("Error durante la operación Argon2id: {0}")]
-    Argon2Error(#[from] argon2::Error),
+    Argon2(#[from] argon2::Error),
 
     #[error("Error al hashear o verificar contraseña")]
-    PasswordHashError(#[from] password_hash::Error),
+    PasswordHash(#[from] password_hash::Error),
 
     #[error("Error al convertir al objeto PasswordHash")]
-    ParseError(#[from] password_hash::phc::Error),
+    Parse(#[from] password_hash::phc::Error),
 }
 
 #[instrument(err)]
@@ -36,10 +36,10 @@ pub fn hash_password(pass: &str) -> Result<String, Argon2IdError> {
 #[instrument(err)]
 pub fn verify_password(pass: &str, hash_pass: &str) -> Result<bool, Argon2IdError> {
     let hash = config_hash()?;
-    let password_hash = PasswordHash::new(&hash_pass)?;
+    let password_hash = PasswordHash::new(hash_pass)?;
 
     match PasswordVerifier::verify_password(&hash, pass.as_bytes(), &password_hash) {
         Ok(_) => Ok(true),
-        Err(error) => Err(Argon2IdError::PasswordHashError(error)),
+        Err(error) => Err(Argon2IdError::PasswordHash(error)),
     }
 }

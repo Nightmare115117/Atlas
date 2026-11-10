@@ -11,8 +11,8 @@ pub struct UserRepo {
 }
 
 impl UserRepo {
-    pub fn new(repo: Arc<Repo>) -> UserRepo {
-        UserRepo { repo: repo }
+    pub fn new(repository: Arc<Repo>) -> UserRepo {
+        UserRepo { repo: repository }
     }
 
     #[instrument(err)]
@@ -176,4 +176,3 @@ impl Repository<UserModel> for UserRepo {
         }
     }
 }
-

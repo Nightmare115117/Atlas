@@ -46,12 +46,6 @@ pub enum UserServiceError {
 
     #[error(transparent)]
     UserParse(#[from] ErrorConvertir),
-
-    #[error("Usuario no encontrado")]
-    UserNotFound,
-
-    #[error("Datos invalidos")]
-    InvalidData,
 }
 
 impl ServiceG for UserService {
