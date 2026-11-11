@@ -1,6 +1,7 @@
 mod common;
 mod config;
 mod health;
+mod organization;
 mod security;
 mod user;
 
@@ -12,6 +13,7 @@ use tokio::{net::TcpListener, runtime};
 use crate::{
     common::{Repo, Route, Service, UserState},
     health::health_route,
+    organization::{OrgModel, OrgRepo},
     security::{aes::AES_KEY, hmac::HMAC_KEY},
     user::{UserRepo, UserRoutes, UserService},
 };
@@ -40,7 +42,8 @@ fn main() -> Result<(), AppErr> {
 
     let repo = Arc::new(Repo::new(runtime.block_on(create_pool(&conf))?));
 
-    let repo_user = UserRepo::new(repo);
+    let repo_user = UserRepo::new(repo.clone());
+    let org_repo = OrgRepo::new(repo.clone());
     let service_user = UserService::new(Service::new(repo_user));
     let user_state = UserState {
         service: Arc::new(service_user),

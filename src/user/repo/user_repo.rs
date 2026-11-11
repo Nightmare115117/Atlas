@@ -11,7 +11,8 @@ pub struct UserRepo {
 }
 
 impl UserRepo {
-    pub fn new(repository: Arc<Repo>) -> UserRepo {
+    #[allow(clippy::needless_pass_by_value)]
+    pub fn new(repository: Arc<Repo>) -> Self {
         UserRepo { repo: repository }
     }
 
