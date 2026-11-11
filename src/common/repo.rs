@@ -1,7 +1,7 @@
 use sqlx::{Pool, Postgres};
 use uuid::Uuid;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Repo {
     pool: Pool<Postgres>,
 }
@@ -25,4 +25,3 @@ pub trait Repository<T> {
     async fn update(&self, id: Uuid, data: T) -> Result<(), Self::Error>;
     async fn delete(&self, id: Uuid) -> Result<(), Self::Error>;
 }
-
